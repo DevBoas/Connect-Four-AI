@@ -54,7 +54,7 @@ namespace Connect_Four
         {
             int c = 0;
             int score = 0;
-
+            Boolean act = false;
             //Horizontal score
             for (int j = 0; j < jaggedArray3[0].Length; j++)
             {
@@ -71,6 +71,79 @@ namespace Connect_Four
                         c = 0;
                 }
             }
+
+            if (score == 3)
+                act = true;
+
+            for (int i = 0; i < jaggedArray3.Length; i++)
+            {
+                c = 0;
+                for (int j = 0; j < jaggedArray3[i].Length; j++)
+                {
+                    if (jaggedArray3[i][j] == who || (jaggedArray3[i][j] == 3 && withSim))
+                    {
+                        c++;
+                        if (c > score)
+                            score = c;
+                    }
+                    else
+                        c = 0;
+                }
+            }
+            if (score == 4)
+                return 4;
+            for (int y = 0; y < jaggedArray3.Length; y++)
+            {
+                for (int x = 0; x < jaggedArray3[y].Length; x++)
+                {
+                    int y_end_up = y + 3;
+                    int x_end_up = x + 3;
+                    int z = x;
+                    c = 0;
+                    if (y_end_up < jaggedArray3.Length && x_end_up < jaggedArray3[y].Length)
+                    {
+                        for (int i = y; i <= y_end_up; i++)
+                        {
+                            if (jaggedArray3[i][z] == who || (jaggedArray3[i][z] == 3 && withSim))
+                            {
+                                c++;
+                                if (c > score)
+                                    score = c;
+                            }
+                            else
+                            {
+                                c = 0;
+                                break;
+                            }
+                            z++;
+                        }
+                    }
+                    int x_end_down = y + 3;
+                    int y_end_down = x - 3;
+                    c = 0;
+                    if (y_end_down >= 0 && x_end_down < jaggedArray3.Length)
+                    {
+                        z = x;
+                        for (int i = y; i <= x_end_down; i++)
+                        {
+                            if (jaggedArray3[i][z] == who || (jaggedArray3[i][z] == 3 && withSim))
+                            {
+                                c++;
+                                if (c > score)
+                                    score = c;
+                            }
+                            else
+                            {
+                                c = 0;
+                                break;
+                            }
+                            z--;
+                        }
+                    }
+                }
+            }
+            if (act && score < 3)
+                return 7;
             return score;
         }
 
@@ -108,13 +181,14 @@ namespace Connect_Four
             //MessageBox.Show("Index Height " + (Height - 1) + " = 0 again");
         }
 
-        private int getScore(int score, int index, int bestIndex)
+        private int getScore(int score, int index, int bestIndex, Boolean act)
         {
             int sim = Simulate(index);
             if (sim != -1)
             {
                 int SimulationScoreEnemy = TryMove(index, 2, true);
                 int SimulationScoreEnemyNoSim = TryMove(index, 2, false);
+
                 int RealSimulationScoreEnemy = SimulationScoreEnemy - SimulationScoreEnemyNoSim;
                 //MessageBox.Show("Enemy Sim Score for index" + index.ToString() + " = " + RealSimulationScoreEnemy);
                 int SimlationScoreFriendly = TryMove(index, 1, true);
@@ -125,11 +199,19 @@ namespace Connect_Four
                 //MessageBox.Show("Friendly Simulation score for index" + index.ToString() + " = " + SimlationScoreFriendly.ToString());
 
                 //if (RealSimulationScoreFriendly >= RealSimulationScoreEnemy)
-                    //RealSimulationScoreEnemy = RealSimulationScoreFriendly;
+                //RealSimulationScoreEnemy = RealSimulationScoreFriendly;
 
+                // You don't want them to be able to have a double win play
+                if (SimulationScoreEnemy == 7 && !act)
+                    act = true;
+                else if (SimulationScoreEnemy == 7 && act)
+                    RealSimulationScoreEnemy = 100;
+
+                //They can win
                 if (SimulationScoreEnemy == 4)
                     RealSimulationScoreEnemy = 8888;
 
+                //We can win 
                 if (SimlationScoreFriendly == 4)
                     RealSimulationScoreEnemy = 9999;
 
@@ -144,24 +226,35 @@ namespace Connect_Four
             if (index == (jaggedArray3.Length - 1))
             {
                 //MessageBox.Show("Best score was" + score.ToString());
+                if (score == 1)
+                    bestIndex = -1;
                 return bestIndex;
             }
             index++;
-            return getScore(score, index, bestIndex);
+            return getScore(score, index, bestIndex, act);
         }
 
         int ha = 0;
         private void ComputerMove(PictureBox newBall)
         {
-            int GetPlay = getScore(0, 0, -1);
+            int GetPlay = getScore(0, 0, -1, false);
             //MessageBox.Show("The Best Play was at index" + GetPlay.ToString());
 
             int loc = GetPlay;
             if (GetPlay == -1)
             {
-                Random rnd = new Random();
-                int random = rnd.Next(0, 7);
-                loc = random;
+                for (int i = 0; i < 15; i++)
+                {
+                    Random rnd = new Random();
+                    int random = rnd.Next(0, 7);
+                    int Height = StackHeight(random);
+                    loc = random;
+                    int sim = Simulate(loc);
+                    int SimulationScoreEnemy = TryMove(loc, 2, true);
+                    UnSimulate(loc);
+                    if (SimulationScoreEnemy < 3)
+                        break;
+                } 
             }
             pictureBox1.Controls.Add(newBall);
             ballCounter++;
