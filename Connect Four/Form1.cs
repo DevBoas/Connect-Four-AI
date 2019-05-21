@@ -50,49 +50,119 @@ namespace Connect_Four
                 Turn.Text = "Yellow's Turn!";
         }
 
-        private int GetHorizontalScore()
+        private int TryMove(int index, int who, Boolean withSim)
         {
-            int lastBall;
-            int c;
-            int biggestC = 0;
-            //Horizontal
+            int c = 0;
+            int score = 0;
+
+            //Horizontal score
             for (int j = 0; j < jaggedArray3[0].Length; j++)
             {
-                lastBall = -1;
-                c = 1;
+                c = 0;
                 for (int i = 0; i < jaggedArray3.Length; i++)
                 {
-                    if (jaggedArray3[i][j] != 0)
+                    if (jaggedArray3[i][j] == who || (jaggedArray3[i][j] == 3 && withSim))
                     {
-                        if (lastBall == jaggedArray3[i][j])
-                            c++;
-                        else
-                            c = 1;
-                        if (c == 2)
-                        { }
-                        lastBall = jaggedArray3[i][j];
+                        c++;
+                        if (c > score)
+                            score = c;
                     }
                     else
-                    {
-                        if (c > biggestC)
-                            biggestC = c;
-                        lastBall = jaggedArray3[i][j];
-                        c = 1;
-                    }
+                        c = 0;
                 }
             }
-            return biggestC;
+            return score;
         }
 
+        private int StackHeight(int index)
+        {
+            int c = 0;
+            for (int i = 0; i < jaggedArray3[index].Length; i++)
+            {
+                if (jaggedArray3[index][i] != 0)
+                    c++;
+                else
+                    break;
+            }
+            return c;
+        }
+
+        private int Simulate(int index)
+        {
+            int Height = StackHeight(index);
+            //MessageBox.Show("Going to simulate adding a ball to index " + index.ToString());
+            //MessageBox.Show("Stack Height of index " + index.ToString() + " is " + Height.ToString());
+            if (Height != 6)
+            {
+                jaggedArray3[index][Height] = 3;
+                //MessageBox.Show("Index Height " + Height + " = 3 now");
+                return 1;
+            }
+            return -1;
+        }
+
+        private void UnSimulate(int index)
+        {
+            int Height = StackHeight(index);
+            jaggedArray3[index][Height - 1] = 0;
+            //MessageBox.Show("Index Height " + (Height - 1) + " = 0 again");
+        }
+
+        private int getScore(int score, int index, int bestIndex)
+        {
+            int sim = Simulate(index);
+            if (sim != -1)
+            {
+                int SimulationScoreEnemy = TryMove(index, 2, true);
+                int SimulationScoreEnemyNoSim = TryMove(index, 2, false);
+                int RealSimulationScoreEnemy = SimulationScoreEnemy - SimulationScoreEnemyNoSim;
+                //MessageBox.Show("Enemy Sim Score for index" + index.ToString() + " = " + RealSimulationScoreEnemy);
+                int SimlationScoreFriendly = TryMove(index, 1, true);
+                //int SimlationScoreFriendlyNoSim = TryMove(index, 1, false);
+                //int RealSimulationScoreFriendly = SimlationScoreFriendly - SimlationScoreFriendlyNoSim;
+                //MessageBox.Show("Enemy Simulation score for index" + index.ToString() + " = " + SimulationScoreEnemy.ToString());
+                //MessageBox.Show("Enemy Simulation score without simulation for index" + index.ToString() + " = " + SimulationScoreEnemyNoSim.ToString());
+                //MessageBox.Show("Friendly Simulation score for index" + index.ToString() + " = " + SimlationScoreFriendly.ToString());
+
+                //if (RealSimulationScoreFriendly >= RealSimulationScoreEnemy)
+                    //RealSimulationScoreEnemy = RealSimulationScoreFriendly;
+
+                if (SimulationScoreEnemy == 4)
+                    RealSimulationScoreEnemy = 8888;
+
+                if (SimlationScoreFriendly == 4)
+                    RealSimulationScoreEnemy = 9999;
+
+                if (RealSimulationScoreEnemy > score)
+                {
+                    score = RealSimulationScoreEnemy;
+                    bestIndex = index;
+                }
+
+                UnSimulate(index);
+            }
+            if (index == (jaggedArray3.Length - 1))
+            {
+                //MessageBox.Show("Best score was" + score.ToString());
+                return bestIndex;
+            }
+            index++;
+            return getScore(score, index, bestIndex);
+        }
+
+        int ha = 0;
         private void ComputerMove(PictureBox newBall)
         {
-            int H_Score = GetHorizontalScore();
-            int loc = 2;
-            Random rnd = new Random();
-            int random = rnd.Next(0, 7);
-            loc = random;
+            int GetPlay = getScore(0, 0, -1);
+            //MessageBox.Show("The Best Play was at index" + GetPlay.ToString());
 
-
+            int loc = GetPlay;
+            if (GetPlay == -1)
+            {
+                Random rnd = new Random();
+                int random = rnd.Next(0, 7);
+                loc = random;
+            }
             pictureBox1.Controls.Add(newBall);
             ballCounter++;
             //MessageBox.Show("H_Score = " + H_Score.ToString());
@@ -157,6 +227,7 @@ namespace Connect_Four
             }
             else
             {
+                newBall.MouseDown += PictureBox1_MouseDown;
                 newBall.Image = (Image)Resources.ResourceManager.GetObject("Yellow");
                 ComputerMove(newBall);
             }
