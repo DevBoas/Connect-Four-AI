@@ -250,10 +250,15 @@ namespace Connect_Four
                     int Height = StackHeight(random);
                     loc = random;
                     int sim = Simulate(loc);
-                    int SimulationScoreEnemy = TryMove(loc, 2, true);
-                    UnSimulate(loc);
-                    if (SimulationScoreEnemy < 3)
-                        break;
+                    if (sim != -1)
+                    {
+                        int SimulationScoreEnemy = TryMove(loc, 2, true);
+                        UnSimulate(loc);
+                        if (SimulationScoreEnemy < 3)
+                            break;
+                    }
+                    else
+                        UnSimulate(loc);
                 } 
             }
             pictureBox1.Controls.Add(newBall);
